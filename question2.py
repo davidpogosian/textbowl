@@ -3,7 +3,7 @@
 # There are Four bowlers from each team, and you must provide them with names (please hard-code 
 # them). The scores must be between 0 and 300 for each bowler. Each bowler must have a score for 
 # each game. Each team member will bowl one game, and games two and three will be random, 
-# between 190 – 300. 
+# between 190 – 300.
 
 # a. You must print each team and all bowlers (separated by the team). 
 # i. Compute the average for each bowler (including the random game)
@@ -22,12 +22,17 @@
 # form or fashion of your choosing. Bonus points will be awarded for well-presented data. 
 # All judging is final, and please note that Doug does take bribes. ￿ 
 from time import sleep
+import random
 import os
 import threading
 
-SHIFT_METER = (1,14 + 1)
-SPEED_METER = (2,14 + 1)
-SPIN_METER = (3,14 + 1)
+TEAM_POS = (1, 40)
+PLAYER_POS = (3, 10)
+POINTS_POS = (5, 10)
+
+SHIFT_METER = (1, 14 + 1)
+SPEED_METER = (2, 14 + 1)
+SPIN_METER = (3, 14 + 1)
 
 lane = []
 for x in range(15):
@@ -35,6 +40,7 @@ for x in range(15):
   for y in range(9):
     row.append(' ')
   lane.append(row)
+pins = []
 
 stop = False
 
@@ -49,13 +55,22 @@ print('\x1b[?25l', end = '')
 os.system("cls")
 
 class Team:
-  def __init__(self) -> None:
-    pass
+  def __init__(self, name, players = []) -> None:
+    self.name = name
+    self.points = 0
+    self.players = players
 
 class Player:
-  def __init__(self) -> None:
-    pass
-
+  def __init__(self, name) -> None:
+    self.name = name
+    self.points = []
+    self.average = 0
+  
+  def getavg(self):
+    total = 0 
+    for score in self.points:
+      total += score
+    self.average = total // len(self.points)
 
 class Pin:
   def __init__(self, r, c, left = None, right = None, behind = None) -> None:
@@ -160,6 +175,36 @@ class Ball:
 
       sleep(1/self.speed)
 
+def typewrite(text, start, border = False, author = '', delay = 0.1, dramaticPause = 0.1):
+  if type(text) != str:
+    text = str(text)
+  row = start[0]
+  column = start[1]
+  string = ''
+  length = len(text) + 5
+
+  if border:
+    top = ''
+    if author == '':
+      top = '╭' + '─'*length + '─╮'
+    else:
+      top = '╭─' + ' ' + author + ' ' + '─' * (length - ( len(author) + 3 )) + '─╮'
+
+    for char in text:
+      string += char
+      print(f'\x1b[{start[0]    };{start[1]}H' + top , flush = True)
+      print(f'\x1b[{start[0] + 1};{start[1]}H│ {string:{length}}│', flush = True)
+      print(f'\x1b[{start[0] + 2};{start[1]}H╰' + '─'*length + '─╯', flush = True)
+      print('\x1b[3A', end = '', flush = True)
+      sleep(delay)
+  else:
+    for char in text:
+      string += char
+      print(f'\x1b[{start[0]};{start[1]}H', end = "")
+      print(string, end = '', flush = True)
+      sleep(delay)
+  sleep(dramaticPause)
+
 def setupPins():
   pin1 = Pin(0, 1)
   pin2 = Pin(0, 3)
@@ -184,6 +229,8 @@ def setupPins():
 
   pin10 = Pin(3, 4, pin8, pin9, pin6)
   lane[3][4] = pin10
+
+  pins = [pin1, pin2, pin3, pin4, pin5, pin6, pin7, pin8, pin9, pin10]
 
 def printLane():
   for row in range(15):
@@ -249,6 +296,10 @@ def useMeter(meter_pos):
     sleep(1)
   return var
 
+def resetPins():
+  for pin in pins:
+    lane[pin.row][pin.col] = pin
+
 def resetMeters():
   print(f'\x1b[{SHIFT_METER[0]};{SHIFT_METER[1]}H', end = "")
   print('\x1b[0K', end = '', flush = True)
@@ -270,9 +321,68 @@ def shoot():
     playerBall.reset(14, shift, speed, spin)
   playerBall.roll()
 
-setupPins()
-printLane()
+# canada players
+brody = Player('Brody Eaton')
+ryder = Player('Ryder Miller')
+maximus = Player('Maximus Morrison')
+griffin = Player('Griffin Scott')
+# japan players
+mihara = Player('Mihara Kado')
+yamane = Player('Yamane Yasotaro')
+eguchi = Player('Eguchi Norishige')
+yukimura = Player('Yukimura Yoshiyuki')
+# wsu players
+isaac = Player('Isaac Bennett')
+harley = Player('Harley Brooks')
+max = Player('Max Nicholson')
+colt = Player('Colt Daniels')
 
-for i in range(3):
-  shoot()
+# teams
+teamCAN = Team('CANADA', [brody, ryder, maximus, griffin])
+teamJAP = Team('JAPAN', [mihara, yamane, eguchi, yukimura])
+teamWSU = Team('WAYNE STATE', [isaac, harley, max, colt])
+
+# random points for players
+for player in teamCAN.players:
+  for i in range(3):
+    player.points.append(random.randint(190, 300))
+  player.getavg()
+for player in teamJAP.players:
+  for i in range(3):
+    player.points.append(random.randint(190, 300))
+  player.getavg()
+
+# display CAN and JAP
+typewrite('TEAM:' + teamCAN.name, TEAM_POS)
+
+for i in range(len(teamCAN.players)):
+  typewrite(teamCAN.players[i].name, (PLAYER_POS[0], PLAYER_POS[1] + i * 20))
+
+for game in range(len(teamCAN.players[0].points) + 1):
+  for player in range(len(teamCAN.players)):
+    # print scores and averages
+    if game == 3:
+      typewrite(teamCAN.players[player].average, (POINTS_POS[0] + game, POINTS_POS[1] + player * 20))
+    else:
+      typewrite(teamCAN.players[player].points[game], (POINTS_POS[0] + game, POINTS_POS[1] + player * 20))
+
+
+
+
+
+
+# enter team WSU scores
+
+# play
+
+# display WSU scores
+
+# podium
+
+
+# setupPins()
+# printLane()
+
+# for i in range(3):
+#   shoot()
 
