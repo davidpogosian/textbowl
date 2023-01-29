@@ -26,10 +26,34 @@ import random
 import os
 import threading
 
-TEAM_POS = (1, 45)
-PLAYER_POS = (3, 15)
-POINTS_POS = (5, 15)
-LABEL_POS = (5, 0)
+screen = \
+'''
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ╭───────────────────────────────────────────────────────────────────────────────────────────╮ ┃
+┃ |                                                                                           │ ┃
+┃ |                                                                                           │ ┃
+┃ |                                                                                           │ ┃
+┃ |                                                                                           │ ┃
+┃ |                                                                                           │ ┃
+┃ |                                                                                           │ ┃
+┃ |                                                                                           │ ┃
+┃ |                                                                                           │ ┃
+┃ |                                                                                           │ ┃
+┃ |                                                                                           │ ┃
+┃ |                                                                                           │ ┃
+┃ |                                                                                           │ ┃
+┃ |                                                                                           │ ┃
+┃ |                                                                                           │ ┃
+┃ |                                                                                           │ ┃
+┃ ╰───────────────────────────────────────────────────────────────────────────────────────────╯ ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                        ╱╱		╲╲
+'''
+
+TEAM_POS = (1 + 4, 45)
+PLAYER_POS = (3 + 4, 15)
+POINTS_POS = (5 + 4, 15)
+LABEL_POS = (5 + 4, 0 + 5)
 
 SHIFT_METER = (1, 14 + 1)
 SPEED_METER = (2, 14 + 1)
@@ -286,10 +310,10 @@ def displayTeam(team):
   for i in range(len(team.players)):
     typewrite(team.players[i].name, (PLAYER_POS[0], PLAYER_POS[1] + i * 20))
 
-  typewrite('game 1   :', (LABEL_POS[0]    , LABEL_POS[1]))
-  typewrite('game 2   :', (LABEL_POS[0] + 1, LABEL_POS[1]))
-  typewrite('game 3   :', (LABEL_POS[0] + 2, LABEL_POS[1]))
-  typewrite('average  :', (LABEL_POS[0] + 3, LABEL_POS[1]))
+  typewrite('game 1  :', (LABEL_POS[0]    , LABEL_POS[1]))
+  typewrite('game 2  :', (LABEL_POS[0] + 1, LABEL_POS[1]))
+  typewrite('game 3  :', (LABEL_POS[0] + 2, LABEL_POS[1]))
+  typewrite('average :', (LABEL_POS[0] + 3, LABEL_POS[1]))
 
   for game in range(len(team.players[0].points) + 1):
     for player in range(len(team.players)):
@@ -413,14 +437,16 @@ teamCAN = Team('CANADA', [brody, ryder, maximus, griffin])
 teamJAP = Team('JAPAN', [mihara, yamane, eguchi, yukimura])
 teamWSU = Team('WAYNE STATE', [isaac, harley, max, colt])
 
-# generateRandomPts()
-# displayTeam(teamCAN)
+print(screen)
+
+generateRandomPts()
+displayTeam(teamCAN)
 # input()
 # os.system('cls')
 # displayTeam(teamJAP)
 # input()
-enterTeam(teamWSU)
-input()
+#enterTeam(teamWSU)
+#input()
 
 # display WSU scores
 
@@ -432,4 +458,3 @@ input()
 
 # for i in range(3):
 #   shoot()
-
