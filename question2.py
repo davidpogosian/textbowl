@@ -59,6 +59,8 @@ SHIFT_METER = (1, 14 + 1)
 SPEED_METER = (2, 14 + 1)
 SPIN_METER = (3, 14 + 1)
 
+MESSAGE_POS = (16, 2)
+
 lane = []
 for x in range(15):
   row = []
@@ -75,8 +77,9 @@ spin = 0
 
 playerBall = None
 
-print('\x1b[?25l', end = '')
 os.system('cls')
+
+print('\x1b[?25l', end = '')
 
 class Team:
   def __init__(self, name, players = []) -> None:
@@ -117,6 +120,7 @@ class Pin:
     self.right = right
     self.behind = behind
     self.symbol = "l"
+    self.knocked = False
 
   def __repr__(self) -> str:
     return self.symbol
@@ -132,19 +136,20 @@ class Pin:
     print(' ', end = "", flush = True)
   
   def knock(self, ball, speed, spin):
+    self.knocked = True
     ball.pins += 1
     lane[self.row][self.column] = ' '
     self.fall()
 
     if speed >= 1:
-      if spin > 0:
-        if self.right != None:
+      if self.right is not None:
+        if not self.right.knocked:
           self.right.knock(ball, speed/2, spin)
-      elif spin < 0:
-        if self.left != None:
+      if self.left is not None:
+        if not self.left.knocked:
           self.left.knock(ball, speed/2, spin)
-      else:
-        if self.behind != None:
+      if self.behind is not None:
+        if not self.behind.knocked:
           self.behind.knock(ball, speed/2, spin)
 
 class Ball:
@@ -219,10 +224,10 @@ def swap(a, b, lst):
   lst[a] = lst[b]
   lst[b] = temp
 
-def bubbleSort(lst):
+def bubbleSort(lst, compareFunc):
   for i in range(len(lst)):
     for item in range(len(lst) - 1):
-      if lst[item + 1].points < lst[item].points:
+      if compareFunc(lst[item + 1], lst[item]):
         swap(item, item + 1, lst)
 
 def typewrite(text, start, border = False, author = '', delay = 0.03, dramaticPause = 0.1):
@@ -254,6 +259,11 @@ def typewrite(text, start, border = False, author = '', delay = 0.03, dramaticPa
       print(string, end = '', flush = True)
       sleep(delay)
   sleep(dramaticPause)
+
+def erase(lines):
+  for line in lines:
+      print(f'\x1b[{line};{0}H;', end = '')
+      print('\x1b[2K', end = '')
 
 def setupPins():
   pin1 = Pin(0, 1)
@@ -398,7 +408,10 @@ def useMeter(meter_pos):
     if var < 8:
       var += 1
     else:
-      var = 0
+      if name == 'SPEED':
+        var = 1
+      else:
+        var = 0
 
     print(f'\x1b[{meter_pos[0]};{meter_pos[1]}H', end = "")
     print(name + ':', var, end = '', flush = True)
@@ -413,7 +426,7 @@ def useMeter(meter_pos):
     for i in range(var):
       print('>', end = '', flush = True)
     
-    sleep(1)
+    sleep(0.2)
   return var
 
 def resetPins():
@@ -462,8 +475,9 @@ teamCAN = Team('CANADA', [brody, ryder, maximus, griffin])
 teamJAP = Team('JAPAN', [mihara, yamane, eguchi, yukimura])
 teamWSU = Team('WAYNE STATE', [isaac, harley, max, colt])
 
-# print(screen)
 # generateRandomPts()
+
+# print(screen)
 # displayTeam(teamCAN)
 # input()
 # os.system('cls')
@@ -482,7 +496,18 @@ teamWSU = Team('WAYNE STATE', [isaac, harley, max, colt])
 # printLane()
 
 # for i in range(3):
+  
+#   if i == 0:
+#     typewrite('Alright Colt, knock \'em dead', MESSAGE_POS, border = True, author = 'Coach', dramaticPause = 1)
+#   elif i == 1:
+#     typewrite('Shoot your best shot!', MESSAGE_POS, border = True, author = 'Coach', dramaticPause = 0.5)
+#   else:
+#     typewrite('Last chance Colt!', MESSAGE_POS, border = True, author = 'Coach', dramaticPause = 0.2)
 #   shoot()
+#   erase([MESSAGE_POS[0], MESSAGE_POS[0] + 1, MESSAGE_POS[0] + 2])
+#   if playerBall.pins == 10:
+#     break
+
 # input()
 # os.system('cls')
 
@@ -498,18 +523,110 @@ teamWSU = Team('WAYNE STATE', [isaac, harley, max, colt])
 # teamCAN.gettotal()
 # teamJAP.gettotal()
 
-# teams = [teamWSU, teamCAN, teamJAP]
+teams = [teamWSU, teamCAN, teamJAP]
+players = [brody, ryder, maximus, griffin, mihara, yamane, eguchi, yukimura, isaac, harley, max, colt]
 
-# bubbleSort(teams)
-
-
-
-
+bubbleSort(teams, lambda a,b : a.points < b.points)
+bubbleSort(players, lambda a,b : a.avg < b.avg)
 
 
 
+def crap(arg):
+  sleep((arg-1) * 0.03)
+  typewrite('/'*100, (arg, 1), delay = 0.001)
+
+x = threading.Thread(target = crap, args = [1])  
+y = threading.Thread(target = crap, args = [2])
+z = threading.Thread(target = crap, args = [3])
+a = threading.Thread(target = crap, args = [4])
+b = threading.Thread(target = crap, args = [5])
 
 
+# x.start()
+# y.start()
+# z.start()
+# a.start()
+# b.start()
+
+dude = \
+'''
+,///
+(^-^)
+()  )
+┋ ┋
+┗ ┗
+'''
+'''
+      ,,,
+╭._.╮ *-*
+    
+╔╳╳╗
+ /\
+'''
 
 
+class Dude:
+  def __init__(self, pos) -> None:
+    self.position = pos
+    self.hair = random.choice([',,,', '...', '>>>', '///'])
+    self.eye = random.choice(['^', '*', '-'])
+    self.mouth = random.choice(['-', 'w', 'o', 'O'])
+    self.body = random.choice(['() )', '[] ]'])
+    self.leg = random.choice(['┋', '║', '┃'])
+    self.rest = None
+    self.walk1 = None
+    self.walk2 = None
+    self.generateframes()
 
+  def generateframes(self):
+    self.rest = \
+    f''' {self.hair}
+({self.eye}{self.mouth}{self.eye})
+{self.body}
+ {self.leg}{self.leg}
+ ┗┗
+    '''
+    self.walk1 = \
+    f''' {self.hair}
+({self.eye}{self.mouth}{self.eye})
+{self.body}
+//\\\\
+┗   ┗
+    '''
+    self.walk2 = \
+    f''' {self.hair}
+({self.eye}{self.mouth})
+{self.body}
+ {self.leg}
+ ┗
+    '''
+  def draw(self, pose):
+    parts = pose.split('\n')
+    for i in range(len(parts)):
+      print(f'\x1b[{self.position[0] + i};{self.position[1]}H', end = "", flush = True)
+      print(parts[i], end = '')
+  def erase(self):
+    for i in range(6):
+      print(f'\x1b[{self.position[0] + i};{self.position[1]}H', end = "", flush = True)
+      print('     ', end = '')
+
+  def spawn(self):
+    self.draw(self.rest)
+      
+  def walk(self, distance):
+    steps = 0
+    self.erase()
+    while distance > 0:   
+      self.draw(self.walk1 if steps % 2 == 0 else self.walk2)
+      sleep(0.3)
+      self.erase()
+      self.position = (self.position[0], self.position[1] + 1)
+
+      steps += 1
+      distance -= 1
+    self.draw(self.rest)
+
+myDude = Dude((1,1))
+myDude.spawn()
+myDude.walk(5)
+sleep(10)
