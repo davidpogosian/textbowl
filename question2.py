@@ -25,6 +25,7 @@ from time import sleep
 import random
 import os
 import threading
+import concurrent.futures
 
 screen = \
 '''
@@ -55,19 +56,22 @@ PLAYER_POS = (3 + 4, 15)
 POINTS_POS = (5 + 4, 15)
 LABEL_POS = (5 + 4, 0 + 5)
 
-SHIFT_METER = (1, 14 + 1)
-SPEED_METER = (2, 14 + 1)
-SPIN_METER = (3, 14 + 1)
+# enter position adjustment here
+LANE_REF = (5, 10)
 
-MESSAGE_POS = (16, 2)
+# top left corner of the lane
+LANE_REF = (LANE_REF[0] + 1, LANE_REF[1] + 3) # adjust for 1 based index and decor
 
-lane = []
-for x in range(15):
-  row = []
-  for y in range(9):
-    row.append(' ')
-  lane.append(row)
-pins = []
+SHIFT_METER = (2 + LANE_REF[0], 14 + LANE_REF[1])
+SPEED_METER = (3 + LANE_REF[0], 14 + LANE_REF[1])
+SPIN_METER =  (4 + LANE_REF[0], 14 + LANE_REF[1])
+
+MESSAGE_POS = (16 + LANE_REF[0], 2 + LANE_REF[1])
+
+lane = {}
+for x in range(LANE_REF[0], LANE_REF[0] + 15):
+  for y in range(LANE_REF[1], 9 + LANE_REF[1]): # 3 compensates for decor
+    lane[(x,y)] = ' '
 
 stop = False
 
@@ -101,10 +105,67 @@ class Team:
     self.points = total
 
 class Player:
-  def __init__(self, name) -> None:
+  def __init__(self, name, pos = (20, 1)) -> None:
     self.name = name
     self.points = []
     self.avg = 0
+
+    self.position = pos
+    self.hair = random.choice([',,,', '...', '>>>', '///'])
+    self.eye = random.choice(['^', '*', '-'])
+    self.mouth = random.choice(['-', 'w', 'o', 'O'])
+    self.body = random.choice(['() )', '[] ]'])
+    self.leg = random.choice(['┋', '║', '┃'])
+    self.rest = None
+    self.walk1 = None
+    self.walk2 = None
+    self.generateframes()
+
+  def generateframes(self):
+    self.rest = \
+    f''' {self.hair}
+({self.eye}{self.mouth}{self.eye})
+{self.body}
+ {self.leg}{self.leg}
+ ┗┗
+'''
+    self.walk1 = \
+    f''' {self.hair}
+({self.eye}{self.mouth}{self.eye})
+{self.body}
+//\\\\
+┗   ┗
+'''
+    self.walk2 = \
+    f''' {self.hair}
+({self.eye}{self.mouth})
+{self.body}
+ {self.leg}
+ ┗
+'''
+  def draw(self, pose):
+    parts = pose.split('\n')
+    for i in range(len(parts)):
+      print(f'\x1b[{self.position[0] + i};{self.position[1]}H' + parts[i], end = "", flush = True)
+  
+  def erase(self):
+    for i in range(6):
+      print(f'\x1b[{self.position[0] + i};{self.position[1]}H' + '     ', end = "", flush = True)
+
+  def spawn(self):
+    self.draw(self.rest)
+      
+  def walk(self, distance):
+    steps = 0
+    self.erase()
+    while distance > 0:   
+      self.draw(self.walk1 if steps % 2 == 0 else self.walk2)
+      sleep(0.3)
+      self.erase()
+      self.position = (self.position[0], self.position[1] + 1)
+      steps += 1
+      distance -= 1
+    self.draw(self.rest)
   
   def getavg(self):
     sum = 0 
@@ -126,19 +187,19 @@ class Pin:
     return self.symbol
 
   def fall(self):
-    print(f'\x1b[{self.row + 1};{self.column + 1 + 2}H', end = "")
+    print(f'\x1b[{self.row};{self.column}H', end = "")
     print('#', end = "", flush = True)
     sleep(0.1)
-    print(f'\x1b[{self.row + 1};{self.column + 1 + 2}H', end = "")
+    print(f'\x1b[{self.row};{self.column}H', end = "")
     print('*', end = "", flush = True)
     sleep(0.1)
-    print(f'\x1b[{self.row + 1};{self.column + 1 + 2}H', end = "")
+    print(f'\x1b[{self.row};{self.column}H', end = "")
     print(' ', end = "", flush = True)
   
   def knock(self, ball, speed, spin):
     self.knocked = True
     ball.pins += 1
-    lane[self.row][self.column] = ' '
+    lane[(self.row, self.column)] = ' '
     self.fall()
 
     if speed >= 1:
@@ -173,11 +234,11 @@ class Ball:
     self.draw()
 
   def draw(self):
-    print(f'\x1b[{self.row + 1};{self.column + 1 + 2}H', end = "")
+    print(f'\x1b[{self.row};{self.column}H', end = "")
     print(self.symbol, end = "", flush = True)
 
   def undraw(self):
-    print(f'\x1b[{self.row + 1};{self.column + 1 + 2}H', end = "")
+    print(f'\x1b[{self.row};{self.column}H', end = "")
     print(' ', end = "", flush = True)
 
   def move(self):
@@ -189,24 +250,24 @@ class Ball:
     self.column += self.spin
 
     # bounce of the walls
-    if self.column < 0:
-      self.column = 0
+    if self.column < LANE_REF[1]:
+      self.column = LANE_REF[1]
       self.spin = -1 * self.spin
       self.column += self.spin
-    if self.column > 8:
-      self.column = 8
+    if self.column > LANE_REF[1] + 8:
+      self.column = LANE_REF[1] + 8
       self.spin = -1 * self.spin
       self.column += self.spin
     
     # hit end
-    if self.row < 0:
+    if self.row < LANE_REF[0]:
       self.collided = True
       return
 
     # hit pin
-    if type(lane[self.row][self.column]) == Pin:
+    if type(lane[(self.row, self.column)]) == Pin:
       self.collided = True
-      lane[self.row][self.column].knock(self, self.speed, self.spin)       
+      lane[(self.row, self.column)].knock(self, self.speed, self.spin)       
   
   def roll(self):
     while True:
@@ -266,49 +327,51 @@ def erase(lines):
       print('\x1b[2K', end = '')
 
 def setupPins():
-  pin1 = Pin(0, 1)
-  pin2 = Pin(0, 3)
-  pin3 = Pin(0, 5)
-  pin4 = Pin(0, 7)
-  lane[0][1] = pin1
-  lane[0][3] = pin2
-  lane[0][5] = pin3
-  lane[0][7] = pin4
+  pin1 = Pin(LANE_REF[0], LANE_REF[1] + 1)
+  pin2 = Pin(LANE_REF[0], LANE_REF[1] + 3)
+  pin3 = Pin(LANE_REF[0], LANE_REF[1] + 5)
+  pin4 = Pin(LANE_REF[0], LANE_REF[1] + 7)
+  lane[(pin1.row, pin1.column)] = pin1
+  lane[(pin2.row, pin2.column)] = pin2
+  lane[(pin3.row, pin3.column)] = pin3
+  lane[(pin4.row, pin4.column)] = pin4
 
-  pin5 = Pin(1, 2, pin1, pin2)
-  pin6 = Pin(1, 4, pin2, pin3)
-  pin7 = Pin(1, 6, pin3, pin4)
-  lane[1][2] = pin5
-  lane[1][4] = pin6
-  lane[1][6] = pin7
+  pin5 = Pin(LANE_REF[0] + 1, LANE_REF[1] + 2, pin1, pin2)
+  pin6 = Pin(LANE_REF[0] + 1, LANE_REF[1] + 4, pin2, pin3)
+  pin7 = Pin(LANE_REF[0] + 1, LANE_REF[1] + 6, pin3, pin4)
+  lane[(pin5.row, pin5.column)] = pin5
+  lane[(pin6.row, pin6.column)] = pin6
+  lane[(pin7.row, pin7.column)] = pin7
 
-  pin8 = Pin(2, 3, pin5, pin6, pin2)
-  pin9 = Pin(2, 5, pin6, pin7, pin3)
-  lane[2][3] = pin8
-  lane[2][5] = pin9
+  pin8 = Pin(LANE_REF[0] + 2, LANE_REF[1] + 3, pin5, pin6, pin2)
+  pin9 = Pin(LANE_REF[0] + 2, LANE_REF[1] + 5, pin6, pin7, pin3)
+  lane[(pin8.row, pin8.column)] = pin8
+  lane[(pin9.row, pin9.column)] = pin9
 
-  pin10 = Pin(3, 4, pin8, pin9, pin6)
-  lane[3][4] = pin10
-
-  pins = [pin1, pin2, pin3, pin4, pin5, pin6, pin7, pin8, pin9, pin10]
+  pin10 = Pin( LANE_REF[0] + 3, LANE_REF[1] + 4, pin8, pin9, pin6)
+  lane[(pin10.row, pin10.column)] = pin10
 
 def printLane():
-  for row in range(15):
-    if row == 0:
+  for i in range(LANE_REF[0] - 1):
+    print() # push down 1 row
+  
+  for row in range(LANE_REF[0], LANE_REF[0] + 15):
+    print(' ' * (LANE_REF[1] - 3), end = '') # push 1 column right
+    if row == LANE_REF[0]:
       print('╮', end = '')
-    elif row == 14:
+    elif row == LANE_REF[0] + 14:
       print('╯', end = '')
     else:
       print('│', end = '')
     print('║', end = '')
 
-    for item in lane[row]:
-      print(item, end = '')
+    for item in range(LANE_REF[1], LANE_REF[1] + 9):
+      print(lane[(row, item)], end = '')
     
     print('║', end = '')
-    if row == 0:
+    if row == LANE_REF[0]:
       print('╭')
-    elif row == 14:
+    elif row == LANE_REF[0] + 14:
       print('╰')
     else:
       print('│')
@@ -429,10 +492,6 @@ def useMeter(meter_pos):
     sleep(0.2)
   return var
 
-def resetPins():
-  for pin in pins:
-    lane[pin.row][pin.col] = pin
-
 def resetMeters():
   print(f'\x1b[{SHIFT_METER[0]};{SHIFT_METER[1]}H', end = "")
   print('\x1b[0K', end = '', flush = True)
@@ -449,9 +508,9 @@ def shoot():
   spin = useMeter(SPIN_METER)
 
   if playerBall == None:
-    playerBall = Ball(14, shift, speed, spin)
+    playerBall = Ball(LANE_REF[0] + 14, LANE_REF[1] + shift, speed, spin)
   else:
-    playerBall.reset(14, shift, speed, spin)
+    playerBall.reset(LANE_REF[0] + 14, LANE_REF[1] + shift, speed, spin)
   playerBall.roll()
 
 # canada players
@@ -492,21 +551,20 @@ teamWSU = Team('WAYNE STATE', [isaac, harley, max, colt])
 # input()
 # os.system('cls')
 
-# setupPins()
-# printLane()
+setupPins()
+printLane()
 
-# for i in range(3):
-  
-#   if i == 0:
-#     typewrite('Alright Colt, knock \'em dead', MESSAGE_POS, border = True, author = 'Coach', dramaticPause = 1)
-#   elif i == 1:
-#     typewrite('Shoot your best shot!', MESSAGE_POS, border = True, author = 'Coach', dramaticPause = 0.5)
-#   else:
-#     typewrite('Last chance Colt!', MESSAGE_POS, border = True, author = 'Coach', dramaticPause = 0.2)
-#   shoot()
-#   erase([MESSAGE_POS[0], MESSAGE_POS[0] + 1, MESSAGE_POS[0] + 2])
-#   if playerBall.pins == 10:
-#     break
+for i in range(3):  
+  if i == 0:
+    typewrite('Alright Colt, knock \'em dead', MESSAGE_POS, border = True, author = 'Coach', dramaticPause = 1)
+  elif i == 1:
+    typewrite('Shoot your best shot!', MESSAGE_POS, border = True, author = 'Coach', dramaticPause = 0.5)
+  else:
+    typewrite('Last chance Colt!', MESSAGE_POS, border = True, author = 'Coach', dramaticPause = 0.2)
+  shoot()
+  erase([MESSAGE_POS[0], MESSAGE_POS[0] + 1, MESSAGE_POS[0] + 2])
+  if playerBall.pins == 10:
+    break
 
 # input()
 # os.system('cls')
@@ -523,23 +581,35 @@ teamWSU = Team('WAYNE STATE', [isaac, harley, max, colt])
 # teamCAN.gettotal()
 # teamJAP.gettotal()
 
-teams = [teamWSU, teamCAN, teamJAP]
+steams = [teamWSU, teamCAN, teamJAP]
 players = [brody, ryder, maximus, griffin, mihara, yamane, eguchi, yukimura, isaac, harley, max, colt]
 
-bubbleSort(teams, lambda a,b : a.points < b.points)
-bubbleSort(players, lambda a,b : a.avg < b.avg)
+# # using sort() is for people who don't know bubblesort
+# bubbleSort(teams, lambda a,b : a.points < b.points)
+# bubbleSort(players, lambda a,b : a.avg < b.avg)
+
+# def walkitout(i):
+#   sleep(i*2)
+#   players[i].spawn()
+#   players[i].walk(100 - i*4)
+
+# with concurrent.futures.ThreadPoolExecutor(max_workers = 12) as executor:
+#   executor.map(walkitout, range(12))
+
+# for player in range(2):
+#   x = threading.Thread(target = walkitout, args = [player])
+#   x.start()
+#   sleep(2)
 
 
+# def crap(arg):
+#   sleep((arg-1) * 0.03)
+#   typewrite('/'*100, (arg, 1), delay = 0.001)
 
-def crap(arg):
-  sleep((arg-1) * 0.03)
-  typewrite('/'*100, (arg, 1), delay = 0.001)
-
-x = threading.Thread(target = crap, args = [1])  
-y = threading.Thread(target = crap, args = [2])
-z = threading.Thread(target = crap, args = [3])
-a = threading.Thread(target = crap, args = [4])
-b = threading.Thread(target = crap, args = [5])
+# y = threading.Thread(target = crap, args = [2])
+# z = threading.Thread(target = crap, args = [3])
+# a = threading.Thread(target = crap, args = [4])
+# b = threading.Thread(target = crap, args = [5])
 
 
 # x.start()
@@ -547,86 +617,3 @@ b = threading.Thread(target = crap, args = [5])
 # z.start()
 # a.start()
 # b.start()
-
-dude = \
-'''
-,///
-(^-^)
-()  )
-┋ ┋
-┗ ┗
-'''
-'''
-      ,,,
-╭._.╮ *-*
-    
-╔╳╳╗
- /\
-'''
-
-
-class Dude:
-  def __init__(self, pos) -> None:
-    self.position = pos
-    self.hair = random.choice([',,,', '...', '>>>', '///'])
-    self.eye = random.choice(['^', '*', '-'])
-    self.mouth = random.choice(['-', 'w', 'o', 'O'])
-    self.body = random.choice(['() )', '[] ]'])
-    self.leg = random.choice(['┋', '║', '┃'])
-    self.rest = None
-    self.walk1 = None
-    self.walk2 = None
-    self.generateframes()
-
-  def generateframes(self):
-    self.rest = \
-    f''' {self.hair}
-({self.eye}{self.mouth}{self.eye})
-{self.body}
- {self.leg}{self.leg}
- ┗┗
-    '''
-    self.walk1 = \
-    f''' {self.hair}
-({self.eye}{self.mouth}{self.eye})
-{self.body}
-//\\\\
-┗   ┗
-    '''
-    self.walk2 = \
-    f''' {self.hair}
-({self.eye}{self.mouth})
-{self.body}
- {self.leg}
- ┗
-    '''
-  def draw(self, pose):
-    parts = pose.split('\n')
-    for i in range(len(parts)):
-      print(f'\x1b[{self.position[0] + i};{self.position[1]}H', end = "", flush = True)
-      print(parts[i], end = '')
-  def erase(self):
-    for i in range(6):
-      print(f'\x1b[{self.position[0] + i};{self.position[1]}H', end = "", flush = True)
-      print('     ', end = '')
-
-  def spawn(self):
-    self.draw(self.rest)
-      
-  def walk(self, distance):
-    steps = 0
-    self.erase()
-    while distance > 0:   
-      self.draw(self.walk1 if steps % 2 == 0 else self.walk2)
-      sleep(0.3)
-      self.erase()
-      self.position = (self.position[0], self.position[1] + 1)
-
-      steps += 1
-      distance -= 1
-    self.draw(self.rest)
-
-myDude = Dude((1,1))
-myDude.spawn()
-myDude.walk(5)
-sleep(10)
