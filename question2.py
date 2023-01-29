@@ -86,12 +86,16 @@ class Team:
     self.avg = 0
   def getavg(self):
     sum = 0
-    total = 0
     for player in self.players:
       for score in player.points:
         sum += score
-        total += 1
-    self.avg = sum // total
+    self.avg = sum // 12
+  def gettotal(self):
+    total = 0
+    for player in self.players:
+      for score in player.points:
+        total += score
+    self.points = total
 
 class Player:
   def __init__(self, name) -> None:
@@ -103,7 +107,7 @@ class Player:
     sum = 0 
     for score in self.points:
       sum += score
-    self.avg = sum // len(self.points)
+    self.avg = sum // 3
 
 class Pin:
   def __init__(self, r, c, left = None, right = None, behind = None) -> None:
@@ -127,20 +131,21 @@ class Pin:
     print(f'\x1b[{self.row + 1};{self.column + 1 + 2}H', end = "")
     print(' ', end = "", flush = True)
   
-  def knock(self, speed, spin):
+  def knock(self, ball, speed, spin):
+    ball.pins += 1
     lane[self.row][self.column] = ' '
     self.fall()
 
     if speed >= 1:
       if spin > 0:
         if self.right != None:
-          self.right.knock(speed/2, spin)
+          self.right.knock(ball, speed/2, spin)
       elif spin < 0:
         if self.left != None:
-          self.left.knock(speed/2, spin)
+          self.left.knock(ball, speed/2, spin)
       else:
         if self.behind != None:
-          self.behind.knock(speed/2, spin)
+          self.behind.knock(ball, speed/2, spin)
 
 class Ball:
   def __init__(self, r, c, s, spin) -> None:
@@ -150,6 +155,7 @@ class Ball:
     self.spin = spin
     self.collided = False
     self.symbol = "o"
+    self.pins = 0
     self.draw()
 
   def reset(self, r, c, s, spin):
@@ -195,7 +201,7 @@ class Ball:
     # hit pin
     if type(lane[self.row][self.column]) == Pin:
       self.collided = True
-      lane[self.row][self.column].knock(self.speed, self.spin)       
+      lane[self.row][self.column].knock(self, self.speed, self.spin)       
   
   def roll(self):
     while True:
@@ -207,6 +213,17 @@ class Ball:
       self.draw()
 
       sleep(1/self.speed)
+
+def swap(a, b, lst):
+  temp = lst[a]
+  lst[a] = lst[b]
+  lst[b] = temp
+
+def bubbleSort(lst):
+  for i in range(len(lst)):
+    for item in range(len(lst) - 1):
+      if lst[item + 1].points < lst[item].points:
+        swap(item, item + 1, lst)
 
 def typewrite(text, start, border = False, author = '', delay = 0.03, dramaticPause = 0.1):
   if type(text) != str:
@@ -338,6 +355,14 @@ def enterTeam(team):
 
   for game in range(4):
     for player in range(len(team.players)):
+      if team.players[player].name == 'Colt Daniels':
+        if game == 2 or game == 3:
+          typewrite('TBD', (POINTS_POS[0] + game, len(team.players[player].name)//2 - 2 + POINTS_POS[1] + player * 20))
+        else:
+          team.players[player].points.append(random.randint(190, 300))
+          typewrite(team.players[player].points[game], (POINTS_POS[0] + game, (len(team.players[player].name)//2) - 2 + POINTS_POS[1] + player * 20))
+        continue
+
       # print scores and averages
       if game == 3:
         team.players[player].getavg()
@@ -437,24 +462,54 @@ teamCAN = Team('CANADA', [brody, ryder, maximus, griffin])
 teamJAP = Team('JAPAN', [mihara, yamane, eguchi, yukimura])
 teamWSU = Team('WAYNE STATE', [isaac, harley, max, colt])
 
-print(screen)
-
-generateRandomPts()
-displayTeam(teamCAN)
+# print(screen)
+# generateRandomPts()
+# displayTeam(teamCAN)
 # input()
 # os.system('cls')
+
+# print(screen)
 # displayTeam(teamJAP)
 # input()
-#enterTeam(teamWSU)
-#input()
+# os.system('cls')
 
-# display WSU scores
-
-# podium
-
+# print(screen)
+# enterTeam(teamWSU)
+# input()
+# os.system('cls')
 
 # setupPins()
 # printLane()
 
 # for i in range(3):
 #   shoot()
+# input()
+# os.system('cls')
+
+# colt.points.append(playerBall.pins * 30)
+# colt.getavg()
+# teamWSU.getavg()
+
+# print(screen)
+# displayTeam(teamWSU)
+# input()
+
+# teamWSU.gettotal()
+# teamCAN.gettotal()
+# teamJAP.gettotal()
+
+# teams = [teamWSU, teamCAN, teamJAP]
+
+# bubbleSort(teams)
+
+
+
+
+
+
+
+
+
+
+
+
