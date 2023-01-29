@@ -26,9 +26,10 @@ import random
 import os
 import threading
 
-TEAM_POS = (1, 40)
-PLAYER_POS = (3, 10)
-POINTS_POS = (5, 10)
+TEAM_POS = (1, 45)
+PLAYER_POS = (3, 15)
+POINTS_POS = (5, 15)
+LABEL_POS = (5, 0)
 
 SHIFT_METER = (1, 14 + 1)
 SPEED_METER = (2, 14 + 1)
@@ -51,26 +52,34 @@ spin = 0
 playerBall = None
 
 print('\x1b[?25l', end = '')
-
-os.system("cls")
+os.system('cls')
 
 class Team:
   def __init__(self, name, players = []) -> None:
     self.name = name
     self.points = 0
     self.players = players
+    self.avg = 0
+  def getavg(self):
+    sum = 0
+    total = 0
+    for player in self.players:
+      for score in player.points:
+        sum += score
+        total += 1
+    self.avg = sum // total
 
 class Player:
   def __init__(self, name) -> None:
     self.name = name
     self.points = []
-    self.average = 0
+    self.avg = 0
   
   def getavg(self):
-    total = 0 
+    sum = 0 
     for score in self.points:
-      total += score
-    self.average = total // len(self.points)
+      sum += score
+    self.avg = sum // len(self.points)
 
 class Pin:
   def __init__(self, r, c, left = None, right = None, behind = None) -> None:
@@ -175,7 +184,7 @@ class Ball:
 
       sleep(1/self.speed)
 
-def typewrite(text, start, border = False, author = '', delay = 0.1, dramaticPause = 0.1):
+def typewrite(text, start, border = False, author = '', delay = 0.03, dramaticPause = 0.1):
   if type(text) != str:
     text = str(text)
   row = start[0]
@@ -257,6 +266,68 @@ def getInput():
   global stop
   junk = input()
   stop = True
+
+def generateRandomPts():
+  for player in teamCAN.players:
+    for i in range(3):
+      player.points.append(random.randint(190, 300))
+    player.getavg()
+  for player in teamJAP.players:
+    for i in range(3):
+      player.points.append(random.randint(190, 300))
+    player.getavg()
+
+  teamCAN.getavg()
+  teamJAP.getavg()
+
+def displayTeam(team):
+  typewrite('TEAM : ' + team.name, TEAM_POS)
+
+  for i in range(len(team.players)):
+    typewrite(team.players[i].name, (PLAYER_POS[0], PLAYER_POS[1] + i * 20))
+
+  typewrite('game 1   :', (LABEL_POS[0]    , LABEL_POS[1]))
+  typewrite('game 2   :', (LABEL_POS[0] + 1, LABEL_POS[1]))
+  typewrite('game 3   :', (LABEL_POS[0] + 2, LABEL_POS[1]))
+  typewrite('average  :', (LABEL_POS[0] + 3, LABEL_POS[1]))
+
+  for game in range(len(team.players[0].points) + 1):
+    for player in range(len(team.players)):
+      # print scores and averages
+      if game == 3:
+        typewrite(team.players[player].avg, (POINTS_POS[0] + game, (len(team.players[player].name)//2) - 2 + POINTS_POS[1] + player * 20))
+      else:
+        typewrite(team.players[player].points[game], (POINTS_POS[0] + game, (len(team.players[player].name)//2) - 2 + POINTS_POS[1] + player * 20))
+
+  typewrite("team average : " + str(team.avg), (TEAM_POS[0] + 9, TEAM_POS[1] - 2))
+
+def enterTeam(team):
+  typewrite('TEAM : ' + team.name, TEAM_POS)
+
+  for i in range(len(team.players)):
+    typewrite(team.players[i].name, (PLAYER_POS[0], PLAYER_POS[1] + i * 20))
+
+  typewrite('game 1   :', (LABEL_POS[0]    , LABEL_POS[1]))
+  typewrite('game 2   :', (LABEL_POS[0] + 1, LABEL_POS[1]))
+  typewrite('game 3   :', (LABEL_POS[0] + 2, LABEL_POS[1]))
+  typewrite('average  :', (LABEL_POS[0] + 3, LABEL_POS[1]))
+
+  for game in range(4):
+    for player in range(len(team.players)):
+      # print scores and averages
+      if game == 3:
+        team.players[player].getavg()
+        typewrite(team.players[player].avg, (POINTS_POS[0] + game, (len(team.players[player].name)//2) - 2 + POINTS_POS[1] + player * 20))
+      else:
+        print(f'\x1b[{POINTS_POS[0] + game};{(len(team.players[player].name)//2) - 2 + POINTS_POS[1] + player * 20}H', end = "")
+        print('\x1b[?25h', end = '')
+        score = int(input())
+        print('\x1b[?25l', end = '')
+        team.players[player].points.append(score)
+        typewrite(team.players[player].points[game], (POINTS_POS[0] + game, (len(team.players[player].name)//2) - 2 + POINTS_POS[1] + player * 20))
+
+  team.getavg()
+  typewrite("team average : " + str(team.avg), (TEAM_POS[0] + 9, TEAM_POS[1] - 2))
 
 def useMeter(meter_pos):
   global stop
@@ -342,38 +413,14 @@ teamCAN = Team('CANADA', [brody, ryder, maximus, griffin])
 teamJAP = Team('JAPAN', [mihara, yamane, eguchi, yukimura])
 teamWSU = Team('WAYNE STATE', [isaac, harley, max, colt])
 
-# random points for players
-for player in teamCAN.players:
-  for i in range(3):
-    player.points.append(random.randint(190, 300))
-  player.getavg()
-for player in teamJAP.players:
-  for i in range(3):
-    player.points.append(random.randint(190, 300))
-  player.getavg()
-
-# display CAN and JAP
-typewrite('TEAM:' + teamCAN.name, TEAM_POS)
-
-for i in range(len(teamCAN.players)):
-  typewrite(teamCAN.players[i].name, (PLAYER_POS[0], PLAYER_POS[1] + i * 20))
-
-for game in range(len(teamCAN.players[0].points) + 1):
-  for player in range(len(teamCAN.players)):
-    # print scores and averages
-    if game == 3:
-      typewrite(teamCAN.players[player].average, (POINTS_POS[0] + game, POINTS_POS[1] + player * 20))
-    else:
-      typewrite(teamCAN.players[player].points[game], (POINTS_POS[0] + game, POINTS_POS[1] + player * 20))
-
-
-
-
-
-
-# enter team WSU scores
-
-# play
+# generateRandomPts()
+# displayTeam(teamCAN)
+# input()
+# os.system('cls')
+# displayTeam(teamJAP)
+# input()
+enterTeam(teamWSU)
+input()
 
 # display WSU scores
 
