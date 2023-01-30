@@ -103,7 +103,13 @@ class Team:
       for score in player.points:
         total += score
     self.points = total
-
+'''
+  ,,, 
+ (^.^)
+.() )-.
+  ┋┋
+  ┗┗
+'''
 class Player:
   def __init__(self, name, pos = (20, 1)) -> None:
     self.name = name
@@ -143,6 +149,34 @@ class Player:
  {self.leg}
  ┗
 '''
+    self.dance1 = \
+    f'''  {self.hair}
+ ({self.eye}{self.mouth}{self.eye})
+.() )-.
+  {self.leg}{self.leg}
+  ┗┗
+    '''
+    self.dance3 = \
+    f'''  {self.hair}
+ ({self.eye}{self.mouth}{self.eye})
+v() )^
+  {self.leg}{self.leg}
+  ┗┗
+    '''
+    self.dance4 = \
+    f'''  {self.hair}
+ ({self.eye}{self.mouth}{self.eye})
+^() )v
+  {self.leg}{self.leg}
+  ┗┗
+    '''
+    self.dance2 = \
+    f'''  {self.hair}
+ ({self.eye}{self.mouth}{self.eye})
+.-() ).
+  {self.leg}{self.leg}
+  ┗┗
+    '''
   
   def draw(self, pose, onlyhead = False):
     parts = pose.split('\n')
@@ -167,6 +201,23 @@ class Player:
       steps += 1
       distance -= 1
     self.draw(self.rest)
+
+  def dance(self):
+    x = 100
+    while x > 0:
+      self.erase()
+      self.draw(self.dance1)
+      sleep(0.3)
+      self.erase()
+      self.draw(self.dance2)
+      sleep(0.3)
+      self.erase()
+      self.draw(self.dance3)
+      sleep(0.3)
+      self.erase()
+      self.draw(self.dance4)
+      sleep(0.3)
+      x -= 1
   
   def getavg(self):
     sum = 0 
@@ -616,32 +667,11 @@ players = [brody, ryder, maximus, griffin, mihara, yamane, eguchi, yukimura, isa
 bubbleSort(teams, lambda a, b : a.points < b.points)
 bubbleSort(players, lambda a, b : a.avg < b.avg)
 
-def walkitout(i):
-  sleep(i*2)
-  players[i].spawn()
-  players[i].walk(100 - i*4 - (i//4) * 20)
+# def walkitout(i):
+#   sleep(i*2)
+#   players[i].spawn()
+#   players[i].walk(100 - i*4 - (i//4) * 20)
 
-with concurrent.futures.ThreadPoolExecutor(max_workers = 12) as executor:
-  executor.map(walkitout, range(12))
+# with concurrent.futures.ThreadPoolExecutor(max_workers = 12) as executor:
+#   executor.map(walkitout, range(12))
 
-# for player in range(2):
-#   x = threading.Thread(target = walkitout, args = [player])
-#   x.start()
-#   sleep(2)
-
-
-# def crap(arg):
-#   sleep((arg-1) * 0.03)
-#   typewrite('/'*100, (arg, 1), delay = 0.001)
-
-# y = threading.Thread(target = crap, args = [2])
-# z = threading.Thread(target = crap, args = [3])
-# a = threading.Thread(target = crap, args = [4])
-# b = threading.Thread(target = crap, args = [5])
-
-
-# x.start()
-# y.start()
-# z.start()
-# a.start()
-# b.start()
