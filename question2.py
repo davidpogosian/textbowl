@@ -53,24 +53,24 @@ screen = \
 
 TEAM_POS = (1 + 4, 45)
 PLAYER_POS = (3 + 4, 15)
-POINTS_POS = (5 + 4, 15)
-LABEL_POS = (5 + 4, 0 + 5)
+POINTS_POS = (5 + 6, 15)
+LABEL_POS = (5 + 6, 0 + 5)
 
 # enter position adjustment here
-LANE_REF = (5, 10)
+LANE_REF = (3, 10)
 
 # top left corner of the lane
 LANE_REF = (LANE_REF[0] + 1, LANE_REF[1] + 3) # adjust for 1 based index and decor
 
-SHIFT_METER = (2 + LANE_REF[0], 14 + LANE_REF[1])
-SPEED_METER = (3 + LANE_REF[0], 14 + LANE_REF[1])
-SPIN_METER =  (4 + LANE_REF[0], 14 + LANE_REF[1])
+SHIFT_METER = (LANE_REF[0]    , 12 + LANE_REF[1])
+SPEED_METER = (1 + LANE_REF[0], 12 + LANE_REF[1])
+SPIN_METER =  (2 + LANE_REF[0], 12 + LANE_REF[1])
 
-MESSAGE_POS = (16 + LANE_REF[0], 2 + LANE_REF[1])
+MESSAGE_POS = (20, 30)
 
 lane = {}
-for x in range(LANE_REF[0], LANE_REF[0] + 15):
-  for y in range(LANE_REF[1], 9 + LANE_REF[1]): # 3 compensates for decor
+for x in range(LANE_REF[0], 15 + LANE_REF[0]):
+  for y in range(LANE_REF[1], 9 + LANE_REF[1]):
     lane[(x,y)] = ' '
 
 stop = False
@@ -112,7 +112,7 @@ class Player:
 
     self.position = pos
     self.hair = random.choice([',,,', '...', '>>>', '///'])
-    self.eye = random.choice(['^', '*', '-'])
+    self.eye = random.choice(['^', '*', '.'])
     self.mouth = random.choice(['-', 'w', 'o', 'O'])
     self.body = random.choice(['() )', '[] ]'])
     self.leg = random.choice(['┋', '║', '┃'])
@@ -143,9 +143,10 @@ class Player:
  {self.leg}
  ┗
 '''
-  def draw(self, pose):
+  
+  def draw(self, pose, onlyhead = False):
     parts = pose.split('\n')
-    for i in range(len(parts)):
+    for i in range(len(parts) if not onlyhead else 2):
       print(f'\x1b[{self.position[0] + i};{self.position[1]}H' + parts[i], end = "", flush = True)
   
   def erase(self):
@@ -399,6 +400,8 @@ def displayTeam(team):
 
   for i in range(len(team.players)):
     typewrite(team.players[i].name, (PLAYER_POS[0], PLAYER_POS[1] + i * 20))
+    team.players[i].position = (PLAYER_POS[0] + 1, 4 + PLAYER_POS[1] + i * 20)
+    team.players[i].draw(team.players[i].rest, True)
 
   typewrite('game 1  :', (LABEL_POS[0]    , LABEL_POS[1]))
   typewrite('game 2  :', (LABEL_POS[0] + 1, LABEL_POS[1]))
@@ -413,13 +416,15 @@ def displayTeam(team):
       else:
         typewrite(team.players[player].points[game], (POINTS_POS[0] + game, (len(team.players[player].name)//2) - 2 + POINTS_POS[1] + player * 20))
 
-  typewrite("team average : " + str(team.avg), (TEAM_POS[0] + 9, TEAM_POS[1] - 2))
+  typewrite("team average : " + str(team.avg), (TEAM_POS[0] + 11, TEAM_POS[1] - 2))
 
 def enterTeam(team):
   typewrite('TEAM : ' + team.name, TEAM_POS)
 
   for i in range(len(team.players)):
     typewrite(team.players[i].name, (PLAYER_POS[0], PLAYER_POS[1] + i * 20))
+    team.players[i].position = (PLAYER_POS[0] + 1, 4 + PLAYER_POS[1] + i * 20)
+    team.players[i].draw(team.players[i].rest, True)
 
   typewrite('game 1   :', (LABEL_POS[0]    , LABEL_POS[1]))
   typewrite('game 2   :', (LABEL_POS[0] + 1, LABEL_POS[1]))
@@ -432,7 +437,11 @@ def enterTeam(team):
         if game == 2 or game == 3:
           typewrite('TBD', (POINTS_POS[0] + game, len(team.players[player].name)//2 - 2 + POINTS_POS[1] + player * 20))
         else:
-          team.players[player].points.append(random.randint(190, 300))
+          print(f'\x1b[{POINTS_POS[0] + game};{(len(team.players[player].name)//2) - 2 + POINTS_POS[1] + player * 20}H', end = "")
+          print('\x1b[?25h', end = '')
+          score = int(input())
+          print('\x1b[?25l', end = '')
+          team.players[player].points.append(score)
           typewrite(team.players[player].points[game], (POINTS_POS[0] + game, (len(team.players[player].name)//2) - 2 + POINTS_POS[1] + player * 20))
         continue
 
@@ -449,7 +458,7 @@ def enterTeam(team):
         typewrite(team.players[player].points[game], (POINTS_POS[0] + game, (len(team.players[player].name)//2) - 2 + POINTS_POS[1] + player * 20))
 
   team.getavg()
-  typewrite("team average : " + str(team.avg), (TEAM_POS[0] + 9, TEAM_POS[1] - 2))
+  typewrite("team average : TBD", (TEAM_POS[0] + 11, TEAM_POS[1] - 2))
 
 def useMeter(meter_pos):
   global stop
@@ -466,7 +475,7 @@ def useMeter(meter_pos):
   var = 3
   x = threading.Thread(target = getInput)
   x.start()
-
+  
   while stop == False:
     if var < 8:
       var += 1
@@ -476,6 +485,7 @@ def useMeter(meter_pos):
       else:
         var = 0
 
+    # this should move outside the loop
     print(f'\x1b[{meter_pos[0]};{meter_pos[1]}H', end = "")
     print(name + ':', var, end = '', flush = True)
 
@@ -488,6 +498,15 @@ def useMeter(meter_pos):
     # draw bar
     for i in range(var):
       print('>', end = '', flush = True)
+
+    # draw preview of ball JANK
+    if name == 'SHIFT':      
+      # clear previous ball
+      if var == 0:
+        print(f'\x1b[{LANE_REF[0] + 14};{LANE_REF[1] + 8}H' + ' ', end = "", flush = True)
+      else:
+        print(f'\x1b[{LANE_REF[0] + 14};{LANE_REF[1] + var - 1}H' + ' ', end = "", flush = True)
+      print(f'\x1b[{LANE_REF[0] + 14};{LANE_REF[1] + var}H' + 'o', end = "", flush = True)
     
     sleep(0.2)
   return var
@@ -529,12 +548,13 @@ harley = Player('Harley Brooks')
 max = Player('Max Nicholson')
 colt = Player('Colt Daniels')
 
+coach = Player('Coach Leopold')
 # teams
 teamCAN = Team('CANADA', [brody, ryder, maximus, griffin])
 teamJAP = Team('JAPAN', [mihara, yamane, eguchi, yukimura])
 teamWSU = Team('WAYNE STATE', [isaac, harley, max, colt])
 
-# generateRandomPts()
+generateRandomPts()
 
 # print(screen)
 # displayTeam(teamCAN)
@@ -551,20 +571,27 @@ teamWSU = Team('WAYNE STATE', [isaac, harley, max, colt])
 # input()
 # os.system('cls')
 
-setupPins()
-printLane()
+# coach.position = (15,1)
+# coach.spawn()
+# coach.walk(30)
+# print(f'\x1b[{1};{1}H', end = '')
 
-for i in range(3):  
-  if i == 0:
-    typewrite('Alright Colt, knock \'em dead', MESSAGE_POS, border = True, author = 'Coach', dramaticPause = 1)
-  elif i == 1:
-    typewrite('Shoot your best shot!', MESSAGE_POS, border = True, author = 'Coach', dramaticPause = 0.5)
-  else:
-    typewrite('Last chance Colt!', MESSAGE_POS, border = True, author = 'Coach', dramaticPause = 0.2)
-  shoot()
-  erase([MESSAGE_POS[0], MESSAGE_POS[0] + 1, MESSAGE_POS[0] + 2])
-  if playerBall.pins == 10:
-    break
+
+# setupPins()
+# printLane()
+
+# for i in range(3):  
+#   if i == 0:
+#     typewrite('Alright Colt, knock \'em dead', MESSAGE_POS, border = True, author = 'Coach Leopold', dramaticPause = 1)
+#   elif i == 1:
+#     typewrite('Shoot your best shot!', MESSAGE_POS, border = True, author = 'Coach Leopold', dramaticPause = 0.5)
+#   else:
+#     typewrite('Last chance Colt!', MESSAGE_POS, border = True, author = 'Coach Leopold', dramaticPause = 0.2)
+#   shoot()
+#   erase([MESSAGE_POS[0], MESSAGE_POS[0] + 1, MESSAGE_POS[0] + 2])
+#   if playerBall.pins == 10:
+#     typewrite('YES! That\'s my boy!', MESSAGE_POS, border = True, author = 'Coach Leopold', dramaticPause = 0.2)
+#     break
 
 # input()
 # os.system('cls')
@@ -576,25 +603,26 @@ for i in range(3):
 # print(screen)
 # displayTeam(teamWSU)
 # input()
+# os.system('cls')
 
 # teamWSU.gettotal()
 # teamCAN.gettotal()
 # teamJAP.gettotal()
 
-steams = [teamWSU, teamCAN, teamJAP]
+teams = [teamWSU, teamCAN, teamJAP]
 players = [brody, ryder, maximus, griffin, mihara, yamane, eguchi, yukimura, isaac, harley, max, colt]
 
-# # using sort() is for people who don't know bubblesort
-# bubbleSort(teams, lambda a,b : a.points < b.points)
-# bubbleSort(players, lambda a,b : a.avg < b.avg)
+# using sort() is for people who don't know bubblesort
+bubbleSort(teams, lambda a, b : a.points < b.points)
+bubbleSort(players, lambda a, b : a.avg < b.avg)
 
-# def walkitout(i):
-#   sleep(i*2)
-#   players[i].spawn()
-#   players[i].walk(100 - i*4)
+def walkitout(i):
+  sleep(i*2)
+  players[i].spawn()
+  players[i].walk(100 - i*4 - (i//4) * 20)
 
-# with concurrent.futures.ThreadPoolExecutor(max_workers = 12) as executor:
-#   executor.map(walkitout, range(12))
+with concurrent.futures.ThreadPoolExecutor(max_workers = 12) as executor:
+  executor.map(walkitout, range(12))
 
 # for player in range(2):
 #   x = threading.Thread(target = walkitout, args = [player])
