@@ -68,6 +68,10 @@ SPIN_METER =  (2 + LANE_REF[0], 12 + LANE_REF[1])
 
 MESSAGE_POS = (20, 30)
 
+PLAYER_PODIUM = (5, 50)
+TEAM_PODIUM = (9, 50)
+
+
 lane = {}
 for x in range(LANE_REF[0], 15 + LANE_REF[0]):
   for y in range(LANE_REF[1], 9 + LANE_REF[1]):
@@ -103,13 +107,7 @@ class Team:
       for score in player.points:
         total += score
     self.points = total
-'''
-  ,,, 
- (^.^)
-.() )-.
-  ┋┋
-  ┗┗
-'''
+
 class Player:
   def __init__(self, name, pos = (20, 1)) -> None:
     self.name = name
@@ -607,71 +605,101 @@ teamWSU = Team('WAYNE STATE', [isaac, harley, max, colt])
 
 generateRandomPts()
 
-# print(screen)
-# displayTeam(teamCAN)
-# input()
-# os.system('cls')
+print(screen)
+displayTeam(teamCAN)
+input()
+os.system('cls')
 
-# print(screen)
-# displayTeam(teamJAP)
-# input()
-# os.system('cls')
+print(screen)
+displayTeam(teamJAP)
+input()
+os.system('cls')
 
-# print(screen)
-# enterTeam(teamWSU)
-# input()
-# os.system('cls')
+print(screen)
+enterTeam(teamWSU)
+input()
+os.system('cls')
 
-# coach.position = (15,1)
-# coach.spawn()
-# coach.walk(30)
-# print(f'\x1b[{1};{1}H', end = '')
+coach.position = (15,1)
+coach.spawn()
+coach.walk(30)
+print(f'\x1b[{1};{1}H', end = '')
 
 
-# setupPins()
-# printLane()
+setupPins()
+printLane()
 
-# for i in range(3):  
-#   if i == 0:
-#     typewrite('Alright Colt, knock \'em dead', MESSAGE_POS, border = True, author = 'Coach Leopold', dramaticPause = 1)
-#   elif i == 1:
-#     typewrite('Shoot your best shot!', MESSAGE_POS, border = True, author = 'Coach Leopold', dramaticPause = 0.5)
-#   else:
-#     typewrite('Last chance Colt!', MESSAGE_POS, border = True, author = 'Coach Leopold', dramaticPause = 0.2)
-#   shoot()
-#   erase([MESSAGE_POS[0], MESSAGE_POS[0] + 1, MESSAGE_POS[0] + 2])
-#   if playerBall.pins == 10:
-#     typewrite('YES! That\'s my boy!', MESSAGE_POS, border = True, author = 'Coach Leopold', dramaticPause = 0.2)
-#     break
+for i in range(3):  
+  if i == 0:
+    typewrite('Alright Colt, knock \'em dead', MESSAGE_POS, border = True, author = 'Coach Leopold', dramaticPause = 1)
+  elif i == 1:
+    typewrite('Shoot your best shot!', MESSAGE_POS, border = True, author = 'Coach Leopold', dramaticPause = 0.5)
+  else:
+    typewrite('Last chance Colt!', MESSAGE_POS, border = True, author = 'Coach Leopold', dramaticPause = 0.2)
+  shoot()
+  erase([MESSAGE_POS[0], MESSAGE_POS[0] + 1, MESSAGE_POS[0] + 2])
+  if playerBall.pins == 10:
+    typewrite('YES! That\'s my boy!', MESSAGE_POS, border = True, author = 'Coach Leopold', dramaticPause = 0.2)
+    break
 
-# input()
-# os.system('cls')
+input()
+os.system('cls')
 
-# colt.points.append(playerBall.pins * 30)
-# colt.getavg()
-# teamWSU.getavg()
+colt.points.append(playerBall.pins * 30)
+colt.getavg()
+teamWSU.getavg()
 
-# print(screen)
-# displayTeam(teamWSU)
-# input()
-# os.system('cls')
+print(screen)
+displayTeam(teamWSU)
+input()
+os.system('cls')
 
-# teamWSU.gettotal()
-# teamCAN.gettotal()
-# teamJAP.gettotal()
+teamWSU.gettotal()
+teamCAN.gettotal()
+teamJAP.gettotal()
 
 teams = [teamWSU, teamCAN, teamJAP]
 players = [brody, ryder, maximus, griffin, mihara, yamane, eguchi, yukimura, isaac, harley, max, colt]
+
+for player in players:
+  player.position = (20, 1)
 
 # using sort() is for people who don't know bubblesort
 bubbleSort(teams, lambda a, b : a.points < b.points)
 bubbleSort(players, lambda a, b : a.avg < b.avg)
 
-# def walkitout(i):
-#   sleep(i*2)
-#   players[i].spawn()
-#   players[i].walk(100 - i*4 - (i//4) * 20)
+def walkitout(i):
+  sleep(i*2)
+  players[i].spawn()
+  players[i].walk(100 - i*6 - (i//4) * 12)
 
-# with concurrent.futures.ThreadPoolExecutor(max_workers = 12) as executor:
-#   executor.map(walkitout, range(12))
+with concurrent.futures.ThreadPoolExecutor(max_workers = 12) as executor:
+  executor.map(walkitout, range(12))
+
+typewrite('Ladies and Gentlement, Welcome to the award ceremony', (5, 5), True, 'Announcer', dramaticPause=2)
+erase(range(5, 10))
+typewrite('of the World Bowl Championship 2034.', (5, 5), True, 'Announcer', dramaticPause = 2)
+erase(range(5, 10))
+typewrite('Let\'s begin with the player awards:', (5, 5), True, 'Announcer', dramaticPause = 2)
+erase(range(5, 10))
+typewrite('The highest averageing player is... ', (5, 5), True, 'Announcer', dramaticPause = 3)
+erase(range(5, 10))
+
+typewrite('1 ' + players[11].name + ' : ' + str(players[11].avg) + ' pts', PLAYER_PODIUM, dramaticPause = 1)
+x = threading.Thread(target = players[11].dance)
+x.start()
+typewrite('2 ' + players[10].name + ' : ' + str(players[10].avg) + ' pts', (PLAYER_PODIUM[0] + 1, PLAYER_PODIUM[1]), dramaticPause = 1)
+y = threading.Thread(target = players[10].dance)
+y.start()
+typewrite('3 ' + players[9].name + ' : ' + str(players[9].avg) + ' pts', (PLAYER_PODIUM[0] + 2, PLAYER_PODIUM[1]), dramaticPause = 1)
+z = threading.Thread(target = players[9].dance)
+z.start()
+
+typewrite('The 2034 Bowling Champions:', (5, 5), True, 'Announcer', dramaticPause = 3)
+
+typewrite('1 ' + teams[2].name + ' : ' + str(teams[2].points) + ' pts', (TEAM_PODIUM[0], TEAM_PODIUM[1]), dramaticPause = 1)
+typewrite('2 ' + teams[1].name + ' : ' + str(teams[1].points) + ' pts', (TEAM_PODIUM[0] + 1, TEAM_PODIUM[1]), dramaticPause = 1)
+typewrite('3 ' + teams[0].name + ' : ' + str(teams[0].points) + ' pts', (TEAM_PODIUM[0] + 2, TEAM_PODIUM[1]), dramaticPause = 1)
+
+
 
