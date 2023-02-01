@@ -21,12 +21,15 @@
 # I grant you full creative rights to make any printout that displays all the data collected in any 
 # form or fashion of your choosing. Bonus points will be awarded for well-presented data. 
 # All judging is final, and please note that Doug does take bribes. ￿ 
+
+# imports
 from time import sleep
 import random
 import os
 import threading
 import concurrent.futures
 
+# monitor asset
 screen = \
 '''
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -51,10 +54,13 @@ screen = \
                                         ╱╱		╲╲
 '''
 
+# positioning constants (chronological)
 TEAM_POS = (1 + 4, 45)
 PLAYER_POS = (3 + 4, 15)
 POINTS_POS = (5 + 6, 15)
 LABEL_POS = (5 + 6, 0 + 5)
+
+PROMPT_POS = (25, 40)
 
 # enter position adjustment here
 LANE_REF = (3, 10)
@@ -68,27 +74,37 @@ SPIN_METER =  (2 + LANE_REF[0], 12 + LANE_REF[1])
 
 MESSAGE_POS = (20, 30)
 
+T1_LABEL = (16, 82)
+T2_LABEL = (16, 46)
+T3_LABEL = (16, 10)
+
 PLAYER_PODIUM = (5, 50)
 TEAM_PODIUM = (9, 50)
 
-
+# dictionary for bowling
 lane = {}
 for x in range(LANE_REF[0], 15 + LANE_REF[0]):
   for y in range(LANE_REF[1], 9 + LANE_REF[1]):
     lane[(x,y)] = ' '
 
+# global variable for 'meters'
 stop = False
 
+# globals for bowling ball
 shift = 0
 speed = 0
 spin = 0
 
+# da bowling ball
 playerBall = None
 
+# clear terminal
 os.system('cls')
 
+# hide cursor
 print('\x1b[?25l', end = '')
 
+# classes and functions
 class Team:
   def __init__(self, name, players = []) -> None:
     self.name = name
@@ -341,6 +357,9 @@ def bubbleSort(lst, compareFunc):
       if compareFunc(lst[item + 1], lst[item]):
         swap(item, item + 1, lst)
 
+def intermediate(args):
+  typewrite(args[0], args[1])
+
 def typewrite(text, start, border = False, author = '', delay = 0.03, dramaticPause = 0.1):
   if type(text) != str:
     text = str(text)
@@ -371,10 +390,33 @@ def typewrite(text, start, border = False, author = '', delay = 0.03, dramaticPa
       sleep(delay)
   sleep(dramaticPause)
 
+def prompt(start, message = '>>> press enter >>>'):
+  global stop
+  stop = False
+  x = threading.Thread(target = getInput)
+  x.start()
+
+  while stop is False:
+    print(f'\x1b[{start[0]};{start[1]}H' + message , flush = True)
+    sleep(0.6)
+    # speed things up
+    if stop:
+      break
+    erase([start[0]])
+    sleep(0.6)
+    
+
+  erase([start[0]])
+
+def crappyinput():
+  pass
+
 def erase(lines):
   for line in lines:
-      print(f'\x1b[{line};{0}H;', end = '')
-      print('\x1b[2K', end = '')
+    print(f'\x1b[{line};{0}H;', end = '')
+    print('\x1b[2K', end = '', flush = True)
+  # return cursor to origin
+  print('\x1b[1;1H', end = '')
 
 def setupPins():
   pin1 = Pin(LANE_REF[0], LANE_REF[1] + 1)
@@ -486,9 +528,18 @@ def enterTeam(team):
         if game == 2 or game == 3:
           typewrite('TBD', (POINTS_POS[0] + game, len(team.players[player].name)//2 - 2 + POINTS_POS[1] + player * 20))
         else:
+          score = None
           print(f'\x1b[{POINTS_POS[0] + game};{(len(team.players[player].name)//2) - 2 + POINTS_POS[1] + player * 20}H', end = "")
           print('\x1b[?25h', end = '')
-          score = int(input())
+          while score is None:
+            try:
+              score = int(input())
+            except:
+              typewrite('Nice try Doug, now enter an int', PROMPT_POS)
+              sleep(2)
+              erase([PROMPT_POS[0]])
+              print(f'\x1b[{POINTS_POS[0] + game};{(len(team.players[player].name)//2) - 2 + POINTS_POS[1] + player * 20}H' + (20 * ' '), end = "")
+              print(f'\x1b[{POINTS_POS[0] + game};{(len(team.players[player].name)//2) - 2 + POINTS_POS[1] + player * 20}H', end = "")
           print('\x1b[?25l', end = '')
           team.players[player].points.append(score)
           typewrite(team.players[player].points[game], (POINTS_POS[0] + game, (len(team.players[player].name)//2) - 2 + POINTS_POS[1] + player * 20))
@@ -499,9 +550,18 @@ def enterTeam(team):
         team.players[player].getavg()
         typewrite(team.players[player].avg, (POINTS_POS[0] + game, (len(team.players[player].name)//2) - 2 + POINTS_POS[1] + player * 20))
       else:
+        score = None
         print(f'\x1b[{POINTS_POS[0] + game};{(len(team.players[player].name)//2) - 2 + POINTS_POS[1] + player * 20}H', end = "")
         print('\x1b[?25h', end = '')
-        score = int(input())
+        while score is None:
+          try:
+            score = int(input())
+          except:
+            typewrite('Nice try Doug, now enter an int', PROMPT_POS)
+            sleep(2)
+            erase([PROMPT_POS[0]])
+            print(f'\x1b[{POINTS_POS[0] + game};{(len(team.players[player].name)//2) - 2 + POINTS_POS[1] + player * 20}H' + (20 * ' '), end = "")
+            print(f'\x1b[{POINTS_POS[0] + game};{(len(team.players[player].name)//2) - 2 + POINTS_POS[1] + player * 20}H', end = "")
         print('\x1b[?25l', end = '')
         team.players[player].points.append(score)
         typewrite(team.players[player].points[game], (POINTS_POS[0] + game, (len(team.players[player].name)//2) - 2 + POINTS_POS[1] + player * 20))
@@ -545,8 +605,7 @@ def useMeter(meter_pos):
     print('\x1b[0K', end = '', flush = True)
 
     # draw bar
-    for i in range(var):
-      print('>', end = '', flush = True)
+    print('>' * var, end = '', flush = True)
 
     # draw preview of ball JANK
     if name == 'SHIFT':      
@@ -581,6 +640,20 @@ def shoot():
     playerBall.reset(LANE_REF[0] + 14, LANE_REF[1] + shift, speed, spin)
   playerBall.roll()
 
+def walkitout(i):
+  sleep(i*2)
+  player = None
+
+  if i // 4 == 0:
+    player = teamJAP.players[i]
+  elif i // 4 == 1:
+    player = teamWSU.players[i % 4]
+  else:
+    player = teamCAN.players[i % 4]
+
+  player.spawn()
+  player.walk(100 - i*6 - (i//4) * 12)
+
 # canada players
 brody = Player('Brody Eaton')
 ryder = Player('Ryder Miller')
@@ -598,37 +671,45 @@ max = Player('Max Nicholson')
 colt = Player('Colt Daniels')
 
 coach = Player('Coach Leopold')
+
 # teams
 teamCAN = Team('CANADA', [brody, ryder, maximus, griffin])
 teamJAP = Team('JAPAN', [mihara, yamane, eguchi, yukimura])
 teamWSU = Team('WAYNE STATE', [isaac, harley, max, colt])
 
+# output starts here:
 generateRandomPts()
 
+# show results of team Canada
 print(screen)
 displayTeam(teamCAN)
-input()
+prompt(PROMPT_POS)
 os.system('cls')
 
+# show results of team Japan
 print(screen)
 displayTeam(teamJAP)
-input()
+prompt(PROMPT_POS)
 os.system('cls')
 
+# show results of team WSU
 print(screen)
 enterTeam(teamWSU)
-input()
+prompt(PROMPT_POS)
 os.system('cls')
 
+# coach walkout
 coach.position = (15,1)
 coach.spawn()
 coach.walk(30)
+# reset cursor
 print(f'\x1b[{1};{1}H', end = '')
 
-
+# game begins here:
 setupPins()
 printLane()
 
+# game loop
 for i in range(3):  
   if i == 0:
     typewrite('Alright Colt, knock \'em dead', MESSAGE_POS, border = True, author = 'Coach Leopold', dramaticPause = 1)
@@ -641,19 +722,21 @@ for i in range(3):
   if playerBall.pins == 10:
     typewrite('YES! That\'s my boy!', MESSAGE_POS, border = True, author = 'Coach Leopold', dramaticPause = 0.2)
     break
-
-input()
+prompt(PROMPT_POS)
 os.system('cls')
 
+# finalize WSU scores
 colt.points.append(playerBall.pins * 30)
 colt.getavg()
 teamWSU.getavg()
 
+# show complete WSU results
 print(screen)
 displayTeam(teamWSU)
-input()
+prompt(PROMPT_POS)
 os.system('cls')
 
+# find winners
 teamWSU.gettotal()
 teamCAN.gettotal()
 teamJAP.gettotal()
@@ -661,6 +744,7 @@ teamJAP.gettotal()
 teams = [teamWSU, teamCAN, teamJAP]
 players = [brody, ryder, maximus, griffin, mihara, yamane, eguchi, yukimura, isaac, harley, max, colt]
 
+# reset player position
 for player in players:
   player.position = (20, 1)
 
@@ -668,14 +752,15 @@ for player in players:
 bubbleSort(teams, lambda a, b : a.points < b.points)
 bubbleSort(players, lambda a, b : a.avg < b.avg)
 
-def walkitout(i):
-  sleep(i*2)
-  players[i].spawn()
-  players[i].walk(100 - i*6 - (i//4) * 12)
-
+# epic team roll out
 with concurrent.futures.ThreadPoolExecutor(max_workers = 12) as executor:
   executor.map(walkitout, range(12))
 
+# team names
+with concurrent.futures.ThreadPoolExecutor(max_workers = 3) as executor:
+  executor.map(intermediate, [["Japan", T1_LABEL], ["WSU", T2_LABEL], ["Canada", T3_LABEL]])
+
+# announcer
 typewrite('Ladies and Gentlement, Welcome to the award ceremony', (5, 5), True, 'Announcer', dramaticPause=2)
 erase(range(5, 10))
 typewrite('of the World Bowl Championship 2034.', (5, 5), True, 'Announcer', dramaticPause = 2)
@@ -685,6 +770,7 @@ erase(range(5, 10))
 typewrite('The highest averageing player is... ', (5, 5), True, 'Announcer', dramaticPause = 3)
 erase(range(5, 10))
 
+# player podium
 typewrite('1 ' + players[11].name + ' : ' + str(players[11].avg) + ' pts', PLAYER_PODIUM, dramaticPause = 1)
 x = threading.Thread(target = players[11].dance)
 x.start()
@@ -697,9 +783,7 @@ z.start()
 
 typewrite('The 2034 Bowling Champions:', (5, 5), True, 'Announcer', dramaticPause = 3)
 
+# team podium
 typewrite('1 ' + teams[2].name + ' : ' + str(teams[2].points) + ' pts', (TEAM_PODIUM[0], TEAM_PODIUM[1]), dramaticPause = 1)
 typewrite('2 ' + teams[1].name + ' : ' + str(teams[1].points) + ' pts', (TEAM_PODIUM[0] + 1, TEAM_PODIUM[1]), dramaticPause = 1)
 typewrite('3 ' + teams[0].name + ' : ' + str(teams[0].points) + ' pts', (TEAM_PODIUM[0] + 2, TEAM_PODIUM[1]), dramaticPause = 1)
-
-
-
